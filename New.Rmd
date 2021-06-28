@@ -1,0 +1,135 @@
+---
+title: "Coronavisrus Disease 2019 (COVID-19)"
+
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+Overview {data-icon="fa-sinal"}
+====================================
+
+```{r}
+library(flexdashboard)
+library(plotly)
+library(shiny)
+library(dplyr)
+
+
+
+dat<-read.csv("/Users/manzana/Documents/master degree/2_2/Final Exam_dataVis/finalexam2.csv")
+dat<-dat%>%
+  filter(Continent_Name!="#N/A")
+
+```
+
+Column {data-width=180 .sidebar}
+-----------------------------------------------------------------------
+
+
+
+```{r}
+selectInput("continent", label = "Continent:",
+            choices = sort(unique(dat$Continent_Name)),
+            selected = "Asia")
+
+filter.dat<-reactive({
+  if("Asia" %in% input$continent) return(dat%>%filter(Continent_Name=="Asia"))
+  if("Europe" %in% input$continent) return(dat%>%filter(Continent_Name=="Europe"))
+  if("Africa" %in% input$continent) return(dat%>%filter(Continent_Name=="Africa"))
+  if("North America" %in% input$continent) return(dat%>%filter(Continent_Name=="North America"))  
+  if("South America" %in% input$continent) return(dat%>%filter(Continent_Name=="South America"))
+  if("Oceania" %in% input$continent) return(dat%>%filter(Continent_Name=="Oceania"))
+  })
+
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+## ภาพรวมจำนวนผู้ป่วย ผู้เสียชีวิต และการรักษาในโรงพยาบาล
+
+
+```{r}
+library(dplyr)
+#install.packages('kableExtra')
+library(kableExtra)
+
+subset <- dat %>% select(Continent_Name, cases_cumulative, deaths_cumulative, hospitalized_cumulative )%>%
+  group_by(Continent_Name,)%>%
+  summarise(sumcase=sum(cases_cumulative,na.rm = T),
+            sumdeath=sum(deaths_cumulative,na.rm = T),
+            sumhospi=sum(hospitalized_cumulative ,na.rm = T))
+
+colnames(subset)<-c("ทวีป","จำนวนผู้ป่วยสะสม","จำนวนผู้เสียชีวิตสะสม","จำนวนผู้รักษาใน รพ. สะสม")
+
+kable(dat) %>% kable_styling() %>% scroll_box(width = "500px", height = "400px")
+
+```
+
+Column {data-width=500}
+-----------------------------------------------------------------------
+### จำนวนผู้ป่วยสะสม
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(patchwork) # To display 2 charts together
+library(hrbrthemes)
+
+p1 <- ggplot(dat, aes(x=dat$date, y=dat$cases_cumulative)) +
+  geom_line(color="#69b3a2", size=2) +
+  ggtitle("")+
+  theme_ipsum()
+p1
+
+
+```
+
+### จำนวนผู้เสียชีวิตสะสม
+
+
+```{r}
+p2 <- ggplot(dat, aes(x=dat$date, y=dat$deaths_cumulative)) +
+  geom_line(color="grey",size=2) +
+  ggtitle("")+
+  theme_ipsum()
+p2
+
+
+```
+
+Effect {data-icon="fa-sinal"}
+====================================
+
+
+Column {data-width=600}
+----------------------------------------------------------------------
+### การปิดโรงเรียของแต่ละทวีป
+
+```{r}
+
+ggplot(dat,                                      # Grouped barplot using ggplot2
+       aes(x = Continent_Name,
+           y =school_closing,
+           fill = school_closing)) +
+  geom_bar(stat = "identity",
+           position = "dodge")
+
+
+```
+
+Column {data-width=600}
+----------------------------------------------------------------------
+### แนวโน้มในการเข้ารับการรักษาและการหายจากโรค
+
+```{r}
+
+  
+
+p <- ggplot(dat, aes( hospitalized_cumulative, discharged_cumulative))
+p +geom_point(aes(colour = factor(Continent_Name)))
+
+```
